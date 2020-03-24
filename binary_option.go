@@ -20,181 +20,38 @@ func main(){
 	}
 	defer file.Close()
 
-
-	file_1, err := os.Create("special_file.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file_1.Close()
-
-
-	round := 50000
-	output_num_list := []int{}
-
-	odd_rounds := 0
-	even_rounds := 0
-	under_rounds := 0
-	over_rounds := 0
-
-	max_odd_rounds := 0
-	max_even_rounds := 0
-	max_under_rounds := 0
-	max_over_rounds := 0
-
+	round := 500
 
 	for i:=0;i<round;i++{
 
 		probability_map := map[string]int{}
-		bet_map,probability_total := gameSetUp(probability_map)
-
-		//fmt.Println(bet_map)
-		//fmt.Println(probability_map)
+		_,probability_total := gameSetUp(probability_map)
 
 		output_num,output_region := randomOutputNum(probability_map,probability_total)
-		banker_income := 0.0
-		single_round_bet := incomeCal(bet_map,output_region,&banker_income)
+		fmt.Println(output_num,output_region)
 
-
-		switch output_region{
-		case "under_odd":
-			under_rounds += 1
-			odd_rounds += 1
-			over_rounds = 0
-			even_rounds = 0
-			file_1.WriteString("-100 1"+"\n")
-
-		case "under_even":
-			under_rounds += 1
-			even_rounds += 1
-			odd_rounds = 0
-			over_rounds = 0
-
-			file_1.WriteString("-100 -1"+"\n")
-		case "over_odd":
-			under_rounds = 0
-			odd_rounds += 1
-			over_rounds += 1
-			even_rounds = 0
-			file_1.WriteString("100 1"+"\n")
-		case "over_even":
-			under_rounds = 0
-			odd_rounds = 0
-			over_rounds += 1
-			even_rounds += 1
-			file_1.WriteString("100 -1"+"\n")
-		}
-
-		if under_rounds > max_under_rounds{
-			max_under_rounds = under_rounds
-		}
-		if odd_rounds >max_odd_rounds{
-			max_odd_rounds = odd_rounds
-		}
-		if over_rounds > max_over_rounds{
-			max_over_rounds = over_rounds
-		}
-		if even_rounds > max_even_rounds{
-			max_even_rounds = even_rounds
-		}
-
+		//banker_income := 0.0
+		//single_round_bet := incomeCal(bet_map,output_region,&banker_income)
 		//fmt.Println(output_num,output_region,single_round_bet)
-		file.WriteString(cast.ToString(output_num) + " "+ cast.ToString(output_region) + " "+cast.ToString(single_round_bet) + " " +cast.ToString(banker_income) +"\n" )
-		output_num_list = append(output_num_list,output_num)
+		//file.WriteString(cast.ToString(output_num) + " "+ cast.ToString(output_region) + " "+cast.ToString(single_round_bet) + " " +cast.ToString(banker_income) +"\n" )
 	}
-
-	sort.Ints(output_num_list)
-
-	for i:= 0;i<len(output_num_list);i++{
-		file.WriteString(cast.ToString(output_num_list[i])+"\n")
-
-	}
-
-	fmt.Println("max_over_rounds= ",max_over_rounds )
-	fmt.Println("max_under_rounds=" ,max_under_rounds)
-	fmt.Println("max_odd_rounds= ",max_odd_rounds)
-	fmt.Println("max_even_rounds= ",max_even_rounds)
-
-	//計算連續不開的機率為多少
 
 }
 
-func incomeCal(bet_map []kv,output_region string , banker_income *float64)float64{
-
-	single_round_bet := 0.0
-
-	for i:=0;i<len(bet_map);i++{
-
-		single_round_bet += bet_map[i].Value
-
-		if  bet_map[i].Key == output_region{
-			*banker_income -= 1.82* bet_map[i].Value
-		}
-
-	}
-
-	single_round_bet /= 2.0
-	*banker_income += single_round_bet
-	return single_round_bet
-}
-
-
-func betSetUP()(odd_total_bet,even_total_bet,over_total_bet,under_total_bet  float64){
-
-	odd_player := []Player{}
-	even_player := []Player{}
-	over_player := []Player{}
-	under_player := []Player{}
-	player_mum := 30
-
-	rand.Seed(time.Now().UnixNano())
-	for i:= 0;i<player_mum;i++{
-		bet_player := cast.ToFloat64(100*(rand.Intn(9)+1))
-		pick_game := rand.Intn(4)
-		switch pick_game{
-		case 0:
-			odd_player = append(odd_player,Player{bet_player,0})
-			odd_total_bet += bet_player
-		case 1:
-			even_player = append(even_player,Player{bet_player,0})
-			even_total_bet += bet_player
-		case 2:
-			over_player = append(over_player,Player{bet_player,0})
-			over_total_bet += bet_player
-		case 3:
-			under_player = append(under_player,Player{bet_player,0})
-			under_total_bet += bet_player
-		}
-	}
-	//fmt.Println(odd_total_bet )
-	//fmt.Println(even_total_bet )
-	//fmt.Println(over_total_bet )
-	//fmt.Println(under_total_bet )
-	return
+type kv struct {
+	Key   string
+	Value float64
 }
 
 func gameSetUp(probability_map map[string]int)(bet_map []kv,probability_total int){
 
-
 	odd_total_bet,even_total_bet,over_total_bet,under_total_bet := betSetUP()
 	remain_probability := 1000
-
 	//var bet_map []kv
-
 	bet_map= append(bet_map, kv{"over_odd",over_total_bet + odd_total_bet})
 	bet_map= append(bet_map, kv{"over_even",over_total_bet + even_total_bet})
 	bet_map= append(bet_map, kv{"under_odd",under_total_bet + odd_total_bet})
 	bet_map= append(bet_map, kv{"under_even",under_total_bet + even_total_bet})
-
-	//bet_map= append(bet_map, kv{"over_odd",5000})
-	//bet_map= append(bet_map, kv{"over_even",1000})
-	//bet_map= append(bet_map, kv{"under_odd",20})
-	//bet_map= append(bet_map, kv{"under_even",10})
-/*
-	bet_map=append(bet_map,kv{"over_odd",7400})
-	bet_map=append(bet_map,kv{"over_even",4100})
-	bet_map=append(bet_map,kv{"under_odd",10100})
-	bet_map=append(bet_map,kv{"under_even",6800})
-*/
 
 	sort.Slice(bet_map, func(i, j int) bool {
 		return bet_map[i].Value > bet_map[j].Value  // 降序
@@ -210,11 +67,6 @@ func gameSetUp(probability_map map[string]int)(bet_map []kv,probability_total in
 	return
 }
 
-
-type kv struct {
-	Key   string
-	Value float64
-}
 
 func randomOutputNum(probability_map map[string]int, probability_total int)(int,string){
 
@@ -249,8 +101,6 @@ func isProbabilityValid(bet_map []kv,probability_map map[string]int,remain_proba
 	for i:=0;i<len(bet_map);i++{
 		sum_bet += bet_map[i].Value
 	}
-	//avg_bet := sum_bet / cast.ToFloat64(len(bet_map))
-
 
 	probability_tmp := setProbability(len(bet_map))
 
@@ -268,13 +118,6 @@ func isProbabilityValid(bet_map []kv,probability_map map[string]int,remain_proba
 		return true
 	}
 	return false
-}
-
-
-type Player struct{
-	bet_money float64
-	//bet_game int
-	income float64
 }
 
 func setProbability(blocker_num int)([]float64){
@@ -318,3 +161,121 @@ func norDistribution(mean,dev,X float64)float64{
 	p := 1/(math.Sqrt(2*math.Pi)*dev)*math.Exp(-0.5*math.Pow((X-mean)/dev,2))
 	return p
 }
+
+
+/*
+
+	just for checking results and game setup
+	no need for real program
+
+*/
+
+type Player struct{
+	bet_money float64
+	//bet_game int
+	income float64
+}
+func incomeCal(bet_map []kv,output_region string , banker_income *float64)float64{
+
+	single_round_bet := 0.0
+	for i:=0;i<len(bet_map);i++{
+
+		single_round_bet += bet_map[i].Value
+
+		if  bet_map[i].Key == output_region{
+			*banker_income -= 1.82* bet_map[i].Value
+		}
+	}
+	single_round_bet /= 2.0
+	*banker_income += single_round_bet
+	return single_round_bet
+}
+
+func showOutputResult(output_region string,odd_rounds,even_rounds,under_rounds,over_rounds,max_over_rounds,max_under_rounds,max_odd_rounds,max_even_rounds *int){
+
+	file_1, err := os.Create("special_file.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file_1.Close()
+
+	switch output_region{
+	case "under_odd":
+		*under_rounds += 1
+		*odd_rounds += 1
+		*over_rounds = 0
+		*even_rounds = 0
+		file_1.WriteString("-100 1"+"\n")
+
+	case "under_even":
+		*under_rounds += 1
+		*even_rounds += 1
+		*odd_rounds = 0
+		*over_rounds = 0
+
+		file_1.WriteString("-100 -1"+"\n")
+	case "over_odd":
+		*under_rounds = 0
+		*odd_rounds += 1
+		*over_rounds += 1
+		*even_rounds = 0
+		file_1.WriteString("100 1"+"\n")
+	case "over_even":
+		*under_rounds = 0
+		*odd_rounds = 0
+		*over_rounds += 1
+		*even_rounds += 1
+		file_1.WriteString("100 -1"+"\n")
+	}
+
+	if *under_rounds > *max_under_rounds{
+		*max_under_rounds = *under_rounds
+	}
+	if *odd_rounds > *max_odd_rounds{
+		*max_odd_rounds = *odd_rounds
+	}
+	if *over_rounds > *max_over_rounds{
+		*max_over_rounds = *over_rounds
+	}
+	if* even_rounds > *max_even_rounds{
+		*max_even_rounds = *even_rounds
+	}
+	return
+}
+
+
+
+func betSetUP()(odd_total_bet,even_total_bet,over_total_bet,under_total_bet  float64){
+
+	odd_player := []Player{}
+	even_player := []Player{}
+	over_player := []Player{}
+	under_player := []Player{}
+	player_mum := 30
+
+	rand.Seed(time.Now().UnixNano())
+	for i:= 0;i<player_mum;i++{
+		bet_player := cast.ToFloat64(100*(rand.Intn(9)+1))
+		pick_game := rand.Intn(4)
+		switch pick_game{
+		case 0:
+			odd_player = append(odd_player,Player{bet_player,0})
+			odd_total_bet += bet_player
+		case 1:
+			even_player = append(even_player,Player{bet_player,0})
+			even_total_bet += bet_player
+		case 2:
+			over_player = append(over_player,Player{bet_player,0})
+			over_total_bet += bet_player
+		case 3:
+			under_player = append(under_player,Player{bet_player,0})
+			under_total_bet += bet_player
+		}
+	}
+	//fmt.Println(odd_total_bet )
+	//fmt.Println(even_total_bet )
+	//fmt.Println(over_total_bet )
+	//fmt.Println(under_total_bet )
+	return
+}
+
