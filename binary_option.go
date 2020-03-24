@@ -21,8 +21,26 @@ func main(){
 	defer file.Close()
 
 
-	round := 2880
+	file_1, err := os.Create("special_file.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file_1.Close()
+
+
+	round := 50000
 	output_num_list := []int{}
+
+	odd_rounds := 0
+	even_rounds := 0
+	under_rounds := 0
+	over_rounds := 0
+
+	max_odd_rounds := 0
+	max_even_rounds := 0
+	max_under_rounds := 0
+	max_over_rounds := 0
+
 
 	for i:=0;i<round;i++{
 
@@ -36,8 +54,51 @@ func main(){
 		banker_income := 0.0
 		single_round_bet := incomeCal(bet_map,output_region,&banker_income)
 
+
+		switch output_region{
+		case "under_odd":
+			under_rounds += 1
+			odd_rounds += 1
+			over_rounds = 0
+			even_rounds = 0
+			file_1.WriteString("-100 1"+"\n")
+
+		case "under_even":
+			under_rounds += 1
+			even_rounds += 1
+			odd_rounds = 0
+			over_rounds = 0
+
+			file_1.WriteString("-100 -1"+"\n")
+		case "over_odd":
+			under_rounds = 0
+			odd_rounds += 1
+			over_rounds += 1
+			even_rounds = 0
+			file_1.WriteString("100 1"+"\n")
+		case "over_even":
+			under_rounds = 0
+			odd_rounds = 0
+			over_rounds += 1
+			even_rounds += 1
+			file_1.WriteString("100 -1"+"\n")
+		}
+
+		if under_rounds > max_under_rounds{
+			max_under_rounds = under_rounds
+		}
+		if odd_rounds >max_odd_rounds{
+			max_odd_rounds = odd_rounds
+		}
+		if over_rounds > max_over_rounds{
+			max_over_rounds = over_rounds
+		}
+		if even_rounds > max_even_rounds{
+			max_even_rounds = even_rounds
+		}
+
 		//fmt.Println(output_num,output_region,single_round_bet)
-		file.WriteString(cast.ToString(output_num) + " "+ cast.ToString(output_region) + " "+cast.ToString(single_round_bet) + " " +cast.ToString(banker_income) + "\n" )
+		file.WriteString(cast.ToString(output_num) + " "+ cast.ToString(output_region) + " "+cast.ToString(single_round_bet) + " " +cast.ToString(banker_income) +"\n" )
 		output_num_list = append(output_num_list,output_num)
 	}
 
@@ -48,6 +109,12 @@ func main(){
 
 	}
 
+	fmt.Println("max_over_rounds= ",max_over_rounds )
+	fmt.Println("max_under_rounds=" ,max_under_rounds)
+	fmt.Println("max_odd_rounds= ",max_odd_rounds)
+	fmt.Println("max_even_rounds= ",max_even_rounds)
+
+	//計算連續不開的機率為多少
 
 }
 
@@ -67,12 +134,8 @@ func incomeCal(bet_map []kv,output_region string , banker_income *float64)float6
 
 	single_round_bet /= 2.0
 	*banker_income += single_round_bet
-
 	return single_round_bet
-
 }
-
-
 
 
 func betSetUP()(odd_total_bet,even_total_bet,over_total_bet,under_total_bet  float64){
@@ -102,6 +165,10 @@ func betSetUP()(odd_total_bet,even_total_bet,over_total_bet,under_total_bet  flo
 			under_total_bet += bet_player
 		}
 	}
+	//fmt.Println(odd_total_bet )
+	//fmt.Println(even_total_bet )
+	//fmt.Println(over_total_bet )
+	//fmt.Println(under_total_bet )
 	return
 }
 
@@ -109,9 +176,7 @@ func gameSetUp(probability_map map[string]int)(bet_map []kv,probability_total in
 
 
 	odd_total_bet,even_total_bet,over_total_bet,under_total_bet := betSetUP()
-
 	remain_probability := 1000
-
 
 	//var bet_map []kv
 
@@ -146,17 +211,14 @@ func gameSetUp(probability_map map[string]int)(bet_map []kv,probability_total in
 }
 
 
-
-
-
 type kv struct {
 	Key   string
 	Value float64
 }
 
-
 func randomOutputNum(probability_map map[string]int, probability_total int)(int,string){
 
+	rand.Seed(time.Now().UnixNano())
 	probability_distribution := make([]string,probability_total)
 	count  := 0
 	for i,_ := range probability_map{
@@ -164,11 +226,11 @@ func randomOutputNum(probability_map map[string]int, probability_total int)(int,
 			probability_distribution[count] = i
 			count += 1
 		}
-
 	}
 
-	selected_region := probability_distribution[rand.Intn(probability_total)]
-	fmt.Printf("selected number = %v ",selected_region)
+	tmp := rand.Intn(probability_total)
+	selected_region := probability_distribution[tmp]
+	//fmt.Printf("selected number = %v ",selected_region)
 
 	region_num_map := map[string][]int{
 		"over_odd":{5,7,9},
